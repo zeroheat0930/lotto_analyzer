@@ -25,7 +25,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             child: CircularProgressIndicator(color: Color(0xFFFFD700)),
           );
         }
-        final analyzer = LottoAnalyzer(historicalData: provider.historicalData);
+        final analyzer = LottoAnalyzer(historicalData: provider.filteredData);
 
         return Container(
           decoration: const BoxDecoration(
@@ -39,6 +39,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                _buildRangeFilter(provider),
+                const SizedBox(height: 20),
                 _sectionTitle('1. 번호별 출현 빈도'),
                 const SizedBox(height: 12),
                 _buildFrequencyChart(analyzer),
@@ -148,6 +150,58 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           ),
         );
       },
+    );
+  }
+
+  /// 4번 피드백: 분석 범위 필터
+  Widget _buildRangeFilter(LottoProvider provider) {
+    final ranges = [
+      {'label': '전체', 'value': 0},
+      {'label': '최근 50', 'value': 50},
+      {'label': '최근 100', 'value': 100},
+      {'label': '최근 300', 'value': 300},
+      {'label': '최근 600', 'value': 600},
+    ];
+    return Row(
+      children: [
+        Text('분석 범위', style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 12)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ranges.map((r) {
+                final isSelected = provider.analysisRange == r['value'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: GestureDetector(
+                    onTap: () => provider.setAnalysisRange(r['value'] as int),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: isSelected ? const Color(0xFFFFD700).withAlpha(25) : Colors.white.withAlpha(8),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFFFFD700) : Colors.white.withAlpha(30),
+                          width: isSelected ? 1.5 : 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        r['label'] as String,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isSelected ? const Color(0xFFFFD700) : Colors.white54,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
