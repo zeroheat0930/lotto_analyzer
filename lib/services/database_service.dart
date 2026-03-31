@@ -97,8 +97,10 @@ class DatabaseService {
 
   Future<int> saveNumbers(
     List<int> numbers,
-    AnalysisStrategy strategy,
-  ) async {
+    AnalysisStrategy strategy, {
+    bool isNeural = false,
+  }) async {
+    final strategyName = isNeural ? 'neural' : strategy.name;
     if (kIsWeb) {
       final id = _nextId++;
       _memoryStore.insert(
@@ -106,7 +108,7 @@ class DatabaseService {
         SavedNumbers(
           id: id,
           numbers: numbers,
-          strategy: strategy.name,
+          strategy: strategyName,
           createdAt: DateTime.now().toIso8601String(),
         ),
       );
@@ -116,7 +118,7 @@ class DatabaseService {
     final db = await database;
     final saved = SavedNumbers(
       numbers: numbers,
-      strategy: strategy.name,
+      strategy: strategyName,
       createdAt: DateTime.now().toIso8601String(),
     );
     return db.insert('saved_numbers', saved.toMap());

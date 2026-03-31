@@ -128,7 +128,11 @@ class LottoProvider extends ChangeNotifier {
   Future<bool> saveCurrentNumbers() async {
     if (_generatedNumbers.isEmpty) return false;
 
-    await _dbService.saveNumbers(_generatedNumbers, _strategy);
+    await _dbService.saveNumbers(
+      _generatedNumbers,
+      _strategy,
+      isNeural: _useNeural,
+    );
     _savedNumbers = await _dbService.getSavedNumbers();
     _numbersSaved = true;
     notifyListeners();
