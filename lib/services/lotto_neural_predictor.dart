@@ -158,19 +158,35 @@ class LottoNeuralPredictor {
     _isTrained = true;
   }
 
-  /// 다음 회차 번호 예측
+  /// 다음 회차 번호 예측 (가중 랜덤 선택으로 매번 다른 결과)
   List<int> predict(List<int> lastNumbers) {
     final input = _numbersToOneHot(lastNumbers);
     final output = _forward(input);
 
-    // 출력값 상위 6개 인덱스 선택
-    final indexed = <MapEntry<int, double>>[];
+    // 출력값을 가중치로 사용해 랜덤 선택 (매번 다른 결과)
+    final weights = <int, double>{};
     for (int i = 0; i < output.length; i++) {
-      indexed.add(MapEntry(i + 1, output[i])); // 1-indexed
+      weights[i + 1] = output[i] + 0.05; // 최소 확률 보장
     }
-    indexed.sort((a, b) => b.value.compareTo(a.value));
 
-    final predicted = indexed.take(6).map((e) => e.key).toList()..sort();
-    return predicted;
+    final selected = <int>{};
+    while (selected.length < 6) {
+      final available = Map<int, double>.from(weights)
+        ..removeWhere((k, _) => selected.contains(k));
+      final totalWeight = available.values.reduce((a, b) => a + b);
+      var point = _random.nextDouble() * totalWeight;
+      for (final entry in available.entries) {
+        point -= entry.value;
+        if (point <= 0) {
+          selected.add(entry.key);
+          break;
+        }
+      }
+      if (selected.length < 6 && point > 0) {
+        selected.add(available.keys.last);
+      }
+    }
+
+    return selected.toList()..sort();
   }
 }

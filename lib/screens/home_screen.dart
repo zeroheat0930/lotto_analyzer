@@ -172,15 +172,24 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               // 설명 텍스트
-              Text(
-                provider.useNeural
-                    ? '신경망이 독립적으로 번호를 예측합니다 (전략 미적용)'
-                    : '아래 전략을 선택하면 가중치가 달라집니다',
-                style: TextStyle(fontSize: 10, color: Colors.white.withAlpha(80)),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white.withAlpha(5),
+                ),
+                child: Text(
+                  provider.useNeural
+                      ? '이전 당첨 번호 패턴을 학습한 신경망이 독립적으로 예측합니다.\n전략 설정과 무관하게 동작하며, 매번 다른 번호가 나옵니다.'
+                      : '아래 전략을 선택하면 번호 선택 가중치가 달라집니다.\n6개 필터(AC값, 합계, 홀짝, 저고, 구간, 연속번호)가 항상 적용됩니다.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 10, color: Colors.white.withAlpha(100), height: 1.5),
+                ),
               ),
               const SizedBox(height: 10),
               // 전략 선택 (신경망 모드가 아닐 때만)
-              if (!provider.useNeural)
+              if (!provider.useNeural) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: AnalysisStrategy.values.map((strategy) {
@@ -225,6 +234,17 @@ class HomeScreen extends StatelessWidget {
                     );
                   }).toList(),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  switch (provider.strategy) {
+                    AnalysisStrategy.conservative => '최근 자주 나온 번호 위주로 선택 ("흐름을 타자")',
+                    AnalysisStrategy.aggressive => '최근 안 나온 번호 위주로 선택 ("이제 나올 때 됐다")',
+                    AnalysisStrategy.balanced => '자주 나온 번호 + 안 나온 번호 균형 있게 선택',
+                  },
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 10, color: Colors.white.withAlpha(80)),
+                ),
+              ],
             ],
           ),
         );
