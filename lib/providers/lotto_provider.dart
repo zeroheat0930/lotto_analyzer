@@ -36,12 +36,10 @@ class LottoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _latestRound = await _apiService.findLatestRoundNumber();
-      final startRound = (_latestRound - 49).clamp(1, _latestRound);
-      _historicalData = await _apiService.fetchMultipleRounds(
-        from: startRound,
-        to: _latestRound,
-      );
+      _historicalData = await _apiService.loadData();
+      if (_historicalData.isNotEmpty) {
+        _latestRound = _historicalData.last.round;
+      }
 
       // 신경망 학습
       _statusMessage = 'AI 신경망 학습 중...';

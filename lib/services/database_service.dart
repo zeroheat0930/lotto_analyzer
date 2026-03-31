@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/lotto_round.dart';
@@ -55,6 +56,11 @@ class SavedNumbers {
 }
 
 class DatabaseService {
+  // 웹용 인메모리 저장소
+  static final List<SavedNumbers> _memoryStore = [];
+  static int _nextId = 1;
+
+  // 네이티브용 SQLite
   static Database? _database;
 
   Future<Database> get database async {
@@ -93,6 +99,20 @@ class DatabaseService {
     List<int> numbers,
     AnalysisStrategy strategy,
   ) async {
+    if (kIsWeb) {
+      final id = _nextId++;
+      _memoryStore.insert(
+        0,
+        SavedNumbers(
+          id: id,
+          numbers: numbers,
+          strategy: strategy.name,
+          createdAt: DateTime.now().toIso8601String(),
+        ),
+      );
+      return id;
+    }
+
     final db = await database;
     final saved = SavedNumbers(
       numbers: numbers,
@@ -103,6 +123,8 @@ class DatabaseService {
   }
 
   Future<List<SavedNumbers>> getSavedNumbers() async {
+    if (kIsWeb) return List.from(_memoryStore);
+
     final db = await database;
     final maps = await db.query(
       'saved_numbers',
@@ -112,6 +134,23 @@ class DatabaseService {
   }
 
   Future<int> checkWinning(int id, LottoRound winningRound) async {
+    if (kIsWeb) {
+      final idx = _memoryStore.indexWhere((s) => s.id == id);
+      if (idx == -1) return 0;
+      final saved = _memoryStore[idx];
+      final matchCount =
+          saved.numbers.where((n) => winningRound.numbers.contains(n)).length;
+      _memoryStore[idx] = SavedNumbers(
+        id: saved.id,
+        numbers: saved.numbers,
+        strategy: saved.strategy,
+        createdAt: saved.createdAt,
+        matchCount: matchCount,
+        checked: true,
+      );
+      return matchCount;
+    }
+
     final db = await database;
     final maps = await db.query(
       'saved_numbers',
@@ -136,6 +175,24 @@ class DatabaseService {
   }
 
   Future<void> checkAllAgainstRound(LottoRound winningRound) async {
+    if (kIsWeb) {
+      for (int i = 0; i < _memoryStore.length; i++) {
+        final saved = _memoryStore[i];
+        if (saved.checked == true) continue;
+        final matchCount =
+            saved.numbers.where((n) => winningRound.numbers.contains(n)).length;
+        _memoryStore[i] = SavedNumbers(
+          id: saved.id,
+          numbers: saved.numbers,
+          strategy: saved.strategy,
+          createdAt: saved.createdAt,
+          matchCount: matchCount,
+          checked: true,
+        );
+      }
+      return;
+    }
+
     final db = await database;
     final unchecked = await db.query(
       'saved_numbers',
@@ -156,6 +213,11 @@ class DatabaseService {
   }
 
   Future<void> deleteNumber(int id) async {
+    if (kIsWeb) {
+      _memoryStore.removeWhere((s) => s.id == id);
+      return;
+    }
+
     final db = await database;
     await db.delete('saved_numbers', where: 'id = ?', whereArgs: [id]);
   }
