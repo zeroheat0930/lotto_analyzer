@@ -1,6 +1,6 @@
 # Lotto Analyzer - AI 로또 번호 분석기
 
-Flutter 기반 로또 번호 분석 및 생성 앱. 동행복권 API에서 실시간 데이터를 가져와 AI 알고리즘으로 최적의 번호를 추천합니다.
+Flutter 기반 로또 번호 분석 및 생성 앱. 동행복권 API + smok95/lotto 미러를 다단계 fallback 으로 활용해 매 cold start 마다 최신 회차를 자동 동기화하고, AI 알고리즘으로 최적의 번호를 추천합니다.
 
 ## Screenshots
 
@@ -113,6 +113,36 @@ https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차번호}
 - **Theme**: 럭셔리 다크 (블랙 `#0D0D0D` + 골드 `#FFD700`)
 - **Ball Widget**: 골드 그라디언트 + 글로우 그림자
 - **Animation**: TweenAnimationBuilder 기반 등장 효과
+
+## 📝 변경 이력 (Changelog)
+
+### v3.1.0 — 2026-04-27 데이터 자동 갱신 파이프라인 + 1221 회차 (2026-04-25) 까지 내장
+
+**🔁 데이터 로딩 흐름 재설계 (`lib/services/lotto_api_service.dart` 전면 재작성)**
+- 기존: `fetchRound(1154)` 하드코딩 테스트 회차 → 동행복권 응답 실패 시 1년 전 sample 로 영구 멈춤
+- 신규 우선순위:
+  1. **smok95/lotto GitHub Pages 미러** (`https://smok95.github.io/lotto/results/all.json`) — 매주 토요일 자동 갱신, 데이터센터 IP 차단 영향 없음
+  2. **동행복권 직접 호출** (`_estimateLatestRound()` 동적 추정) — 사용자 폰 IP 에서 차단 안 되면 동작
+  3. **내장 sample data** — 오프라인 fallback
+- `_estimateLatestRound()` — 첫 추첨일(2002-12-07, 토) 기준 주차 계산. 토요일 21시 추첨 미발표 시점 자동 보정
+- `fetchLatestFromMirror()` — 미러의 최신 1회차 가벼운 ping 메서드 추가
+
+**📚 내장 데이터셋 1155~1221 회차 추가 (`lib/services/lotto_sample_data.dart`)**
+- 67 개 회차 추가: 2025-01-18 (1155 회차) ~ 2026-04-25 (1221 회차)
+- 출처: smok95/lotto JSON 미러 (동행복권 공식 데이터)
+- 총 1221 회차 (~23.4 년치) 내장, 오프라인에서도 최근 분석 가능
+
+**🔄 동적 갱신 동작 보장**
+- `MainNavigation.initState()` PostFrameCallback 에서 `loadHistoricalData()` 호출 → 앱 cold start 마다 미러 fetch
+- 매주 토요일 21시 이후 미러 갱신 → 다음 앱 실행 시 신규 회차 자동 반영
+
+**검증:** `flutter analyze` No issues found / sample_data 회차 라인 1221 개 정확
+
+### v3.0.3 (이전) — 신경망 결과 일관성 + 모드/전략 툴팁 + 분석 항목 설명
+
+이전 버전 changelog 는 git log 참조.
+
+---
 
 ## License
 
